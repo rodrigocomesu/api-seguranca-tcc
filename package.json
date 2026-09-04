@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/rodrigocomesu/api-seguranca-tcc#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1"
