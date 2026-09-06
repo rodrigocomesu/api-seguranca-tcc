@@ -55,6 +55,23 @@ app.use(cors()) //middleware que autoriza o frontend de outra origem acessar o b
 app.use(express.json()) //middleware converte o corpo das requisições em JSON
 
 
+app.post('/login', (req, res) => {
+    const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(req.body.email)
+
+    if (!user) {
+        return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
+    }
+
+    const senhaCorreta = bcrypt.compareSync(req.body.password, user.password)
+
+    if (!senhaCorreta) {
+        return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
+    }
+
+    return res.status(200).json({ mensagem: 'Login Realizado com sucesso' })
+})
+
+
    // rota pra olhar as contas do banco de dados depois apagar.
 // app.get('/debug/users', (req, res) => {
 //     const users = db.prepare('SELECT * FROM users').all()
