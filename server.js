@@ -3,7 +3,7 @@ const cors = require('cors')
 const Database = require('better-sqlite3')
 const bcrypt = require('bcrypt')
 const db = new Database('banco.db')
-
+const jwt = require('jsonwebtoken')
 
 
 
@@ -68,9 +68,57 @@ app.post('/login', (req, res) => {
         return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
     }
 
-    return res.status(200).json({ mensagem: 'Login Realizado com sucesso' })
+    const token = jwt.sign(
+        {id: user.id, role: user.role}, //dados payload que vao no token
+        'chave_secreta', //chave secreta pra assinar
+        {expiresIn: '1h'} //tempo de expiração
+    )
+    return res.status(200).json({token: token })
 })
 
+
+//rotas dos pacientes
+
+app.post('/pacientes', (req, res) =>{
+    const stmt = db.prepare(`INSERT INTO patients (name, cpf, birthDate, sex, phone, symptoms, weight) VALUES (?, ? ,? ,?, ?, ?, ?)`)
+    const resultado = stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight)
+    res.json({
+        id: resultado.lastInsertRowid,
+        ...req.body
+    })
+})
+
+app.get('/pacientes', (req, res) => {
+    const stmt = db.prepare(`SELECT * FROM patients`)
+    const resultado = stmt.all()
+
+    res.json(resultado)
+})
+
+app.put('/pacientes/:id', (req, res) => {
+    const stmt = db.prepare(`UPDATE patients SET name = ?, cpf = ?, birthDate = ?, sex = ?, phone = ?, symptoms = ?, weight = ? WHERE id = ?`)
+    stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight, req.params.id)
+
+    res.json({
+        id: req.params.id,
+        ...req.body
+    })
+})
+
+app.delete('/pacientes/:id', (req, res) => {
+    //busca o paciente pelo id, pra verificar se ele existe
+    const paciente = db.prepare(`SELECT * FROM patients WHERE id = ?`).get(req.params.id)
+
+    //se não existir, retorna 404 e para aqui
+    if (!paciente) {
+        return res.status(404).json({ mensagem: 'Paciente nao encontrado' })
+    }
+
+    //se existir, deleta
+    db.prepare(`DELETE FROM patients WHERE id = ?`).run(req.params.id)
+
+    res.json({ mensagem: 'Paciente removido' })
+})
 
    // rota pra olhar as contas do banco de dados depois apagar.
 // app.get('/debug/users', (req, res) => {
