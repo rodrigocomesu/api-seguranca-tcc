@@ -73,7 +73,7 @@ app.post('/login', (req, res) => {
         'chave_secreta', //chave secreta pra assinar
         {expiresIn: '1h'} //tempo de expiração
     )
-    return res.status(200).json({token: token })
+    return res.status(200).json({ token: token, role: user.role })
 })
 
 
@@ -120,11 +120,7 @@ app.delete('/pacientes/:id', (req, res) => {
     res.json({ mensagem: 'Paciente removido' })
 })
 
-   // rota pra olhar as contas do banco de dados depois apagar.
-// app.get('/debug/users', (req, res) => {
-//     const users = db.prepare('SELECT * FROM users').all()
-//     res.json(users)
-// })
+
 
 //sempre no final da pagina
 app.listen(3000, () => {
