@@ -55,6 +55,28 @@ app.use(cors()) //middleware que autoriza o frontend de outra origem acessar o b
 app.use(express.json()) //middleware converte o corpo das requisições em JSON
 
 
+function verificarToken(req, res, next) {
+   
+    const authHeader = req.headers.authorization
+
+   
+    if (!authHeader) {
+        return res.status(401).json({ mensagem: 'Token nao fornecido' })
+    }
+
+    
+    const token = authHeader.split(' ')[1]
+
+    try {
+        const dados = jwt.verify(token, 'chave_secreta')
+        req.usuario = dados  
+        next()  
+    } catch (erro) {
+        return res.status(401).json({ mensagem: 'Token invalido' })
+    }
+}
+
+
 app.post('/login', (req, res) => {
     const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(req.body.email)
 
@@ -79,7 +101,7 @@ app.post('/login', (req, res) => {
 
 //rotas dos pacientes
 
-app.post('/pacientes', (req, res) =>{
+app.post('/pacientes', verificarToken, (req, res) =>{
     const stmt = db.prepare(`INSERT INTO patients (name, cpf, birthDate, sex, phone, symptoms, weight) VALUES (?, ? ,? ,?, ?, ?, ?)`)
     const resultado = stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight)
     res.json({
@@ -88,14 +110,14 @@ app.post('/pacientes', (req, res) =>{
     })
 })
 
-app.get('/pacientes', (req, res) => {
+app.get('/pacientes', verificarToken, (req, res) => {
     const stmt = db.prepare(`SELECT * FROM patients`)
     const resultado = stmt.all()
 
     res.json(resultado)
 })
 
-app.put('/pacientes/:id', (req, res) => {
+app.put('/pacientes/:id', verificarToken, (req, res) => {
     const stmt = db.prepare(`UPDATE patients SET name = ?, cpf = ?, birthDate = ?, sex = ?, phone = ?, symptoms = ?, weight = ? WHERE id = ?`)
     stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight, req.params.id)
 
@@ -105,7 +127,7 @@ app.put('/pacientes/:id', (req, res) => {
     })
 })
 
-app.delete('/pacientes/:id', (req, res) => {
+app.delete('/pacientes/:id', verificarToken, (req, res) => {
     //busca o paciente pelo id, pra verificar se ele existe
     const paciente = db.prepare(`SELECT * FROM patients WHERE id = ?`).get(req.params.id)
 
