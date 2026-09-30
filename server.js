@@ -101,11 +101,15 @@ app.post('/login', (req, res) => {
 
 //rotas dos pacientes
 
-app.post('/pacientes', verificarToken, (req, res) =>{
-    const stmt = db.prepare(`INSERT INTO patients (name, cpf, birthDate, sex, phone, symptoms, weight) VALUES (?, ? ,? ,?, ?, ?, ?)`)
-    const resultado = stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight)
+app.post('/pacientes', verificarToken, (req, res) => {
+    const stmt = db.prepare(`INSERT INTO patients (user_id, name, cpf, birthDate, sex, phone, symptoms, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+
+    // user_id vem do token (usuario logado)
+    const resultado = stmt.run(req.usuario.id, req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight)
+
     res.json({
         id: resultado.lastInsertRowid,
+        user_id: req.usuario.id,
         ...req.body
     })
 })

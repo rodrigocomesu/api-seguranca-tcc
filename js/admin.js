@@ -1,12 +1,13 @@
-
 const tabela = document.getElementById('patientsTableBody')
-
+const token = localStorage.getItem('token')  // pega o token guardado no login
 
 function carregarPacientes() {
-    fetch('http://localhost:3000/pacientes')
+    fetch('http://localhost:3000/pacientes', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(resposta => resposta.json())
         .then(pacientes => {
-            tabela.innerHTML = ''  // limpa a tabela antes de preencher
+            tabela.innerHTML = ''
 
             pacientes.forEach(paciente => {
                 const linha = document.createElement('tr')
@@ -26,16 +27,15 @@ function carregarPacientes() {
         })
 }
 
-// deleta um paciente
 function deletarPaciente(id) {
     fetch(`http://localhost:3000/pacientes/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(resposta => resposta.json())
         .then(() => {
-            carregarPacientes()  // recarrega a tabela
+            carregarPacientes()
         })
 }
 
-// carrega a tabela assim que a página abre
 carregarPacientes()
