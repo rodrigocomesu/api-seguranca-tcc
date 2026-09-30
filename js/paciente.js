@@ -1,14 +1,13 @@
 const form = document.getElementById('pacienteForm')
-const pacienteId = 1  // fixo até implementar o jwt corretamente
+const pacienteId = 1
+const token = localStorage.getItem('token')  // pega o token guardado no login
 
-
-fetch(`http://localhost:3000/pacientes`)
+fetch(`http://localhost:3000/pacientes`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+})
     .then(resposta => resposta.json())
     .then(pacientes => {
-        
         const paciente = pacientes.find(p => p.id === pacienteId)
-
-        
         if (paciente) {
             document.getElementById('name').value = paciente.name || ''
             document.getElementById('cpf').value = paciente.cpf || ''
@@ -19,7 +18,6 @@ fetch(`http://localhost:3000/pacientes`)
             document.getElementById('symptoms').value = paciente.symptoms || ''
         }
     })
-
 
 form.addEventListener('submit', (evento) => {
     evento.preventDefault()
@@ -36,7 +34,10 @@ form.addEventListener('submit', (evento) => {
 
     fetch(`http://localhost:3000/pacientes/${pacienteId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(dados)
     })
         .then(resposta => resposta.json())

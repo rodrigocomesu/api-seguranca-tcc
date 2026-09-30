@@ -59,12 +59,12 @@ function verificarToken(req, res, next) {
    
     const authHeader = req.headers.authorization
 
-   
+   // sem cabeçalho de token, bloqueia
     if (!authHeader) {
         return res.status(401).json({ mensagem: 'Token nao fornecido' })
     }
 
-    
+    // separa o token
     const token = authHeader.split(' ')[1]
 
     try {
