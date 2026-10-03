@@ -115,34 +115,49 @@ app.post('/pacientes', verificarToken, (req, res) => {
 })
 
 app.get('/pacientes', verificarToken, (req, res) => {
-    const stmt = db.prepare(`SELECT * FROM patients`)
-    const resultado = stmt.all()
+    // se for admin, retorna todos
+    if (req.usuario.role === 'admin') {
+        const pacientes = db.prepare(`SELECT * FROM patients`).all()
+        return res.json(pacientes)
+    }
 
-    res.json(resultado)
+    // se for paciente, retorna só os dele filtra pelo user_id do token
+    const pacientes = db.prepare(`SELECT * FROM patients WHERE user_id = ?`).all(req.usuario.id)
+    res.json(pacientes)
 })
 
 app.put('/pacientes/:id', verificarToken, (req, res) => {
-    const stmt = db.prepare(`UPDATE patients SET name = ?, cpf = ?, birthDate = ?, sex = ?, phone = ?, symptoms = ?, weight = ? WHERE id = ?`)
-    stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight, req.params.id)
-
-    res.json({
-        id: req.params.id,
-        ...req.body
-    })
-})
-
-app.delete('/pacientes/:id', verificarToken, (req, res) => {
-    //busca o paciente pelo id, pra verificar se ele existe
     const paciente = db.prepare(`SELECT * FROM patients WHERE id = ?`).get(req.params.id)
 
-    //se não existir, retorna 404 e para aqui
     if (!paciente) {
         return res.status(404).json({ mensagem: 'Paciente nao encontrado' })
     }
 
-    //se existir, deleta
-    db.prepare(`DELETE FROM patients WHERE id = ?`).run(req.params.id)
+    // se não é admin nem o dono, bloqueia
+    if (req.usuario.role !== 'admin' && paciente.user_id !== req.usuario.id) {
+        return res.status(403).json({ mensagem: 'Acesso negado' })
+    }
 
+    const stmt = db.prepare(`UPDATE patients SET name = ?, cpf = ?, birthDate = ?, sex = ?, phone = ?, symptoms = ?, weight = ? WHERE id = ?`)
+    stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight, req.params.id)
+
+    res.json({ id: req.params.id, ...req.body })
+})
+
+
+app.delete('/pacientes/:id', verificarToken, (req, res) => {
+    const paciente = db.prepare(`SELECT * FROM patients WHERE id = ?`).get(req.params.id)
+
+    if (!paciente) {
+        return res.status(404).json({ mensagem: 'Paciente nao encontrado' })
+    }
+
+    // se não é admin E não é o dono, bloqueia
+    if (req.usuario.role !== 'admin' && paciente.user_id !== req.usuario.id) {
+        return res.status(403).json({ mensagem: 'Acesso negado' })
+    }
+
+    db.prepare(`DELETE FROM patients WHERE id = ?`).run(req.params.id)
     res.json({ mensagem: 'Paciente removido' })
 })
 
