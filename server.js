@@ -1,4 +1,6 @@
 const express = require('express')
+const rateLimit = require('express-rate-limit')
+const { z } = require('zod')
 const cors = require('cors')
 const Database = require('better-sqlite3')
 const bcrypt = require('bcrypt')
@@ -55,6 +57,24 @@ app.use(cors()) //middleware que autoriza o frontend de outra origem acessar o b
 app.use(express.json()) //middleware converte o corpo das requisições em JSON
 
 
+// limita tentativas de login
+const limitadorLogin = rateLimit({
+    windowMs: 15 * 60 * 1000,  // janela de 15 minutos
+    limit: 5,                   // maximo de 5 tentativas por IP
+    message: { mensagem: 'Muitas tentativas de login. Tente novamente em 15 minutos.' }
+})
+
+// regras de validacao dos dados do paciente
+const pacienteSchema = z.object({
+    name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
+    cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 digitos numericos'),
+    birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD'),
+    sex: z.enum(['male', 'female', 'other'], { message: 'Sexo invalido' }),
+    phone: z.string().min(1, 'Telefone obrigatorio'),
+    symptoms: z.string().max(1000, 'Sintomas muito longos'),
+    weight: z.number().positive('Peso deve ser maior que zero')
+})
+
 function verificarToken(req, res, next) {
    
     const authHeader = req.headers.authorization
@@ -77,7 +97,7 @@ function verificarToken(req, res, next) {
 }
 
 
-app.post('/login', (req, res) => {
+app.post('/login', limitadorLogin, (req, res) => {
     const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(req.body.email)
 
     if (!user) {
@@ -102,6 +122,10 @@ app.post('/login', (req, res) => {
 //rotas dos pacientes
 
 app.post('/pacientes', verificarToken, (req, res) => {
+    const validacao = pacienteSchema.safeParse(req.body)
+    if (!validacao.success) {
+        return res.status(400).json({ erros: validacao.error.issues })
+    }
     const stmt = db.prepare(`INSERT INTO patients (user_id, name, cpf, birthDate, sex, phone, symptoms, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
 
     // user_id vem do token (usuario logado)
