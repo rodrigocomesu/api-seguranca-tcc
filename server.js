@@ -1,5 +1,6 @@
 const express = require('express')
 const rateLimit = require('express-rate-limit')
+const helmet = require('helmet')
 const { z } = require('zod')
 const cors = require('cors')
 const Database = require('better-sqlite3')
@@ -52,9 +53,11 @@ if (totalUsers.total === 0) {
 }
 const app = express()
 
-app.use(cors()) //middleware que autoriza o frontend de outra origem acessar o backend
+app.use(cors({ origin: 'http://127.0.0.1:5500' })) //middleware permite requisicoes apenas do frontend
 
 app.use(express.json()) //middleware converte o corpo das requisições em JSON
+
+app.use(helmet()) //adiciona cabecalhos http na seguranca 
 
 
 // limita tentativas de login
