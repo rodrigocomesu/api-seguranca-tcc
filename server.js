@@ -121,6 +121,17 @@ app.post('/login', limitadorLogin, (req, res) => {
     return res.status(200).json({ token: token, role: user.role })
 })
 
+//login vulneravel
+app.post('/login-vulneravel', (req, res) => {
+    const query = `SELECT * FROM users WHERE email = '${req.body.email}' AND password = '${req.body.password}'`
+    const user = db.prepare(query).get()
+
+    if (user) {
+        return res.status(200).json({ mensagem: 'Login realizado', email: user.email })
+    }
+    return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
+})
+
 
 //rotas dos pacientes
 
@@ -140,6 +151,8 @@ app.post('/pacientes', verificarToken, (req, res) => {
         ...req.body
     })
 })
+
+
 
 app.get('/pacientes', verificarToken, (req, res) => {
     // se for admin, retorna todos
