@@ -8,7 +8,13 @@ const bcrypt = require('bcrypt')
 const db = new Database('banco.db')
 const jwt = require('jsonwebtoken')
 
+const fs = require('fs')
 
+// log
+function registrarLog(mensagem) {
+    const linha = `[${new Date().toISOString()}] ${mensagem}\n`
+    fs.appendFileSync('seguranca.log', linha)
+}
 
 
 db.exec(`
@@ -79,11 +85,12 @@ const pacienteSchema = z.object({
 })
 
 function verificarToken(req, res, next) {
-   
+
     const authHeader = req.headers.authorization
 
-   // sem cabeçalho de token, bloqueia
+    // sem cabeçalho de token, bloqueia
     if (!authHeader) {
+        registrarLog(`Acesso negado - sem token - IP: ${req.ip}`)
         return res.status(401).json({ mensagem: 'Token nao fornecido' })
     }
 
@@ -92,9 +99,10 @@ function verificarToken(req, res, next) {
 
     try {
         const dados = jwt.verify(token, 'chave_secreta')
-        req.usuario = dados  
-        next()  
+        req.usuario = dados
+        next()
     } catch (erro) {
+        registrarLog(`Acesso negado - token invalido - IP: ${req.ip}`)
         return res.status(401).json({ mensagem: 'Token invalido' })
     }
 }
@@ -104,20 +112,24 @@ app.post('/login', limitadorLogin, (req, res) => {
     const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(req.body.email)
 
     if (!user) {
+        registrarLog(`Falha de login - email inexistente: ${req.body.email} - IP: ${req.ip}`)
         return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
     }
 
     const senhaCorreta = bcrypt.compareSync(req.body.password, user.password)
 
     if (!senhaCorreta) {
+        registrarLog(`Falha de login - senha incorreta: ${req.body.email} - IP: ${req.ip}`)
         return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
     }
 
     const token = jwt.sign(
-        {id: user.id, role: user.role}, //dados payload que vao no token
+        { id: user.id, role: user.role }, //dados payload que vao no token
         'chave_secreta', //chave secreta pra assinar
-        {expiresIn: '1h'} //tempo de expiração
+        { expiresIn: '1h' } //tempo de expiração
     )
+
+    registrarLog(`Login realizado: ${user.email} - IP: ${req.ip}`)
     return res.status(200).json({ token: token, role: user.role })
 })
 
@@ -175,6 +187,7 @@ app.put('/pacientes/:id', verificarToken, (req, res) => {
 
     // se não é admin nem o dono, bloqueia
     if (req.usuario.role !== 'admin' && paciente.user_id !== req.usuario.id) {
+        registrarLog(`Acesso negado (RBAC) - usuario ${req.usuario.id} tentou editar paciente ${req.params.id} - IP: ${req.ip}`)
         return res.status(403).json({ mensagem: 'Acesso negado' })
     }
 
@@ -194,6 +207,7 @@ app.delete('/pacientes/:id', verificarToken, (req, res) => {
 
     // se não é admin E não é o dono, bloqueia
     if (req.usuario.role !== 'admin' && paciente.user_id !== req.usuario.id) {
+        registrarLog(`Acesso negado (RBAC) - usuario ${req.usuario.id} tentou deletar paciente ${req.params.id} - IP: ${req.ip}`)
         return res.status(403).json({ mensagem: 'Acesso negado' })
     }
 
@@ -206,4 +220,4 @@ app.delete('/pacientes/:id', verificarToken, (req, res) => {
 //sempre no final da pagina
 app.listen(3000, () => {
     console.log('Servidor rodando na porta 3000')
-}) 
+})
