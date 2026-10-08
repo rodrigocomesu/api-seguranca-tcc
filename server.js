@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const rateLimit = require('express-rate-limit')
 const helmet = require('helmet')
@@ -98,7 +99,7 @@ function verificarToken(req, res, next) {
     const token = authHeader.split(' ')[1]
 
     try {
-        const dados = jwt.verify(token, 'chave_secreta')
+        const dados = jwt.verify(token, process.env.JWT_SECRET)
         req.usuario = dados
         next()
     } catch (erro) {
@@ -125,7 +126,7 @@ app.post('/login', limitadorLogin, (req, res) => {
 
     const token = jwt.sign(
         { id: user.id, role: user.role }, //dados payload que vao no token
-        'chave_secreta', //chave secreta pra assinar
+        process.env.JWT_SECRET, //chave secreta pra assinar
         { expiresIn: '1h' } //tempo de expiração
     )
 
