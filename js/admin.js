@@ -17,6 +17,9 @@ function carregarPacientes() {
                     <td>${paciente.cpf || ''}</td>
                     <td>${paciente.birthDate || ''}</td>
                     <td>${paciente.phone || ''}</td>
+                    <td>${paciente.sex || ''}</td>
+                    <td>${paciente.weight || ''}</td>
+                    <td>${paciente.symptoms || ''}</td>
                     <td>
                         <button onclick="deletarPaciente(${paciente.id})">Deletar</button>
                     </td>

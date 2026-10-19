@@ -69,7 +69,7 @@ app.use(helmet()) //adiciona cabecalhos http na seguranca
 
 // limita tentativas de login
 const limitadorLogin = rateLimit({
-    windowMs: 15 * 60 * 1000,  // janela de 15 minutos
+    windowMs: 15 * 60 * 1000,  // 15 minutos
     limit: 5,                   // maximo de 5 tentativas por IP
     message: { mensagem: 'Muitas tentativas de login. Tente novamente em 15 minutos.' }
 })
@@ -89,13 +89,11 @@ function verificarToken(req, res, next) {
 
     const authHeader = req.headers.authorization
 
-    // sem cabeçalho de token, bloqueia
     if (!authHeader) {
         registrarLog(`Acesso negado - sem token - IP: ${req.ip}`)
         return res.status(401).json({ mensagem: 'Token nao fornecido' })
     }
 
-    // separa o token
     const token = authHeader.split(' ')[1]
 
     try {

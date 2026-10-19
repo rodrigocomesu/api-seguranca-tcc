@@ -1,14 +1,17 @@
 const form = document.getElementById('pacienteForm')
-const pacienteId = 1
-const token = localStorage.getItem('token')  // pega o token guardado no login
+const token = localStorage.getItem('token')
+let pacienteId = null
 
-fetch(`http://localhost:3000/pacientes`, {
+fetch('http://localhost:3000/pacientes', {
     headers: { 'Authorization': `Bearer ${token}` }
 })
     .then(resposta => resposta.json())
     .then(pacientes => {
-        const paciente = pacientes.find(p => p.id === pacienteId)
+        // o backend ja devolve so os registros do paciente logado
+        const paciente = pacientes[0]
+
         if (paciente) {
+            pacienteId = paciente.id
             document.getElementById('name').value = paciente.name || ''
             document.getElementById('cpf').value = paciente.cpf || ''
             document.getElementById('birthDate').value = paciente.birthDate || ''
