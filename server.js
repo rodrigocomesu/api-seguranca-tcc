@@ -86,7 +86,6 @@ const pacienteSchema = z.object({
 })
 
 function verificarToken(req, res, next) {
-
     const authHeader = req.headers.authorization
 
     if (!authHeader) {
@@ -94,10 +93,16 @@ function verificarToken(req, res, next) {
         return res.status(401).json({ mensagem: 'Token nao fornecido' })
     }
 
-    const token = authHeader.split(' ')[1]
+    // o cabeçalho deve estar no formato "Bearer <token>"
+    const [esquema, token] = authHeader.split(' ')
+
+    if (esquema !== 'Bearer' || !token) {
+        registrarLog(`Acesso negado - cabecalho invalido - IP: ${req.ip}`)
+        return res.status(401).json({ mensagem: 'Formato do cabecalho invalido' })
+    }
 
     try {
-        const dados = jwt.verify(token, process.env.JWT_SECRET)
+        const dados = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] })
         req.usuario = dados
         next()
     } catch (erro) {
@@ -122,11 +127,7 @@ app.post('/login', limitadorLogin, (req, res) => {
         return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
     }
 
-    const token = jwt.sign(
-        { id: user.id, role: user.role }, //dados payload que vao no token
-        process.env.JWT_SECRET, //chave secreta pra assinar
-        { expiresIn: '1h' } //tempo de expiração
-    )
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' })
 
     registrarLog(`Login realizado: ${user.email} - IP: ${req.ip}`)
     return res.status(200).json({ token: token, role: user.role })
@@ -190,12 +191,18 @@ app.put('/pacientes/:id', verificarToken, (req, res) => {
         return res.status(403).json({ mensagem: 'Acesso negado' })
     }
 
+    // valida os dados com o mesmo esquema do cadastro
+    const validacao = pacienteSchema.safeParse(req.body)
+    if (!validacao.success) {
+        return res.status(400).json({ mensagem: 'Dados invalidos', erros: validacao.error.issues })
+    }
+    const dados = validacao.data
+
     const stmt = db.prepare(`UPDATE patients SET name = ?, cpf = ?, birthDate = ?, sex = ?, phone = ?, symptoms = ?, weight = ? WHERE id = ?`)
-    stmt.run(req.body.name, req.body.cpf, req.body.birthDate, req.body.sex, req.body.phone, req.body.symptoms, req.body.weight, req.params.id)
+    stmt.run(dados.name, dados.cpf, dados.birthDate, dados.sex, dados.phone, dados.symptoms, dados.weight, req.params.id)
 
-    res.json({ id: req.params.id, ...req.body })
+    res.json({ id: req.params.id, ...dados })
 })
-
 
 app.delete('/pacientes/:id', verificarToken, (req, res) => {
     const paciente = db.prepare(`SELECT * FROM patients WHERE id = ?`).get(req.params.id)
