@@ -93,7 +93,7 @@ function verificarToken(req, res, next) {
         return res.status(401).json({ mensagem: 'Token nao fornecido' })
     }
 
-    // o cabeçalho deve estar no formato "Bearer <token>"
+    // o cabeçalho deve estar no formato Bearer <token>
     const [esquema, token] = authHeader.split(' ')
 
     if (esquema !== 'Bearer' || !token) {
