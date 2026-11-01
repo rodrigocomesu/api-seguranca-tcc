@@ -133,17 +133,18 @@ app.post('/login', limitadorLogin, (req, res) => {
     return res.status(200).json({ token: token, role: user.role })
 })
 
-//login vulneravel
-app.post('/login-vulneravel', (req, res) => {
-    const query = `SELECT * FROM users WHERE email = '${req.body.email}' AND password = '${req.body.password}'`
-    const user = db.prepare(query).get()
+// login vulneravel: so existe com MODO_LABORATORIO=true no .env (demonstracao de injecao de SQL)
+if (process.env.MODO_LABORATORIO === 'true') {
+    app.post('/login-vulneravel', (req, res) => {
+        const query = `SELECT * FROM users WHERE email = '${req.body.email}' AND password = '${req.body.password}'`
+        const user = db.prepare(query).get()
 
-    if (user) {
-        return res.status(200).json({ mensagem: 'Login realizado', email: user.email })
-    }
-    return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
-})
-
+        if (user) {
+            return res.status(200).json({ mensagem: 'Login realizado', email: user.email })
+        }
+        return res.status(401).json({ mensagem: 'Login ou senha incorretas' })
+    })
+}
 
 //rotas dos pacientes
 

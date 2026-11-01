@@ -12,18 +12,21 @@ function carregarPacientes() {
             pacientes.forEach(paciente => {
                 const linha = document.createElement('tr')
 
-                linha.innerHTML = `
-                    <td>${paciente.name || ''}</td>
-                    <td>${paciente.cpf || ''}</td>
-                    <td>${paciente.birthDate || ''}</td>
-                    <td>${paciente.phone || ''}</td>
-                    <td>${paciente.sex || ''}</td>
-                    <td>${paciente.weight || ''}</td>
-                    <td>${paciente.symptoms || ''}</td>
-                    <td>
-                        <button onclick="deletarPaciente(${paciente.id})">Deletar</button>
-                    </td>
-                `
+                // cada valor entra como texto, sem ser interpretado como HTML
+                const campos = [paciente.name, paciente.cpf, paciente.birthDate, paciente.phone,
+                                paciente.sex, paciente.weight, paciente.symptoms]
+                campos.forEach(valor => {
+                    const celula = document.createElement('td')
+                    celula.textContent = valor ?? ''
+                    linha.appendChild(celula)
+                })
+
+                const celulaBotao = document.createElement('td')
+                const botao = document.createElement('button')
+                botao.textContent = 'Deletar'
+                botao.addEventListener('click', () => deletarPaciente(paciente.id))
+                celulaBotao.appendChild(botao)
+                linha.appendChild(celulaBotao)
 
                 tabela.appendChild(linha)
             })
